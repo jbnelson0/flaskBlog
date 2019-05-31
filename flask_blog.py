@@ -1,9 +1,37 @@
 from flask import Flask, render_template, url_for, flash, redirect
 from forms import RegistrationForm, LoginForm
+from datetime import datetime
+from flask_sqlalchemy import SQLAlchemy
+
 app = Flask(__name__)
-
-
 app.config['SECRET_KEY'] = 'de104ecad906b0ca18ef455a25c32172'
+app.config['SQLALCHEMY_DATABSE_URI'] = 'sqlite:///site.db'
+db = SQLAlchemy(app)
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(20), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    image_file = db.Column(db.String(20), nullable=False, default='default.jpg')
+    password = db.Column(db.String(60), nullable=False)
+
+    #post attribute has rel to Post model (uppercase for model name), backref adds extra column to add author, lazy tells SQLAlchemy to load data in one go
+    posts = db.relationship('Post', backref='author', lazy=True)
+
+    # what it looks like when printed
+    def __repr__(self):
+        return f"User('{self.username}', '{self.email}', '{self.image_file}')"
+
+class Post(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    date_posted = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    content = db.Column(db.Text, nullable=False)
+    #id of user who authored the post (lowercase u is for table/column name)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    def __repr__(self):
+        return f"Post('{self.title}', '{self.date_posted}')"
 
 
 posts = [
