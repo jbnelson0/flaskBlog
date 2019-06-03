@@ -14,7 +14,7 @@ class User(db.Model, UserMixin):
     image_file = db.Column(db.String(20), nullable=False, default='default.jpg')
     password = db.Column(db.String(60), nullable=False)
 
-    def get_reset_token(self, expired_sec=1800):
+    def get_reset_token(self, expires_sec=1800):
         #create reset token from serializer
         s = Serializer(app.config['SECRET_KEY'], expires_sec)
         return s.dumps({'user_id': self.id}).decode('utf-8')
@@ -24,7 +24,7 @@ class User(db.Model, UserMixin):
         #if we catch token without error (timeout), grab the user from the user_id
         s = Serializer(app.config['SECRET_KEY'])
         try:
-            user_id = s.load(token)['user_id']
+            user_id = s.loads(token)['user_id']
         except:
             return None
         return User.query.get(user_id)
