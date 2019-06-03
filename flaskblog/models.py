@@ -1,6 +1,7 @@
 from datetime import datetime
-from flaskblog import db, login_manager
+from flaskblog import db, login_manager, app
 from flask_login import UserMixin
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -12,6 +13,21 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(120), unique=True, nullable=False)
     image_file = db.Column(db.String(20), nullable=False, default='default.jpg')
     password = db.Column(db.String(60), nullable=False)
+
+    def get_reset_token(self, expired_sec=1800):
+        #create reset token from serializer
+        s = Serializer(app.config['SECRET_KEY'], expires_sec)
+        return s.dumps({'user_id': self.id}).decode('utf-8')
+
+    @staticmethod
+    def verify_reset_token(token):
+        #if we catch token without error (timeout), grab the user from the user_id
+        s = Serializer(app.config['SECRET_KEY'])
+        try:
+            user_id = s.load(token)['user_id']
+        except:
+            return None
+        return User.query.get(user_id)
 
     #post attribute has rel to Post model (uppercase for model name), backref adds extra column to add author, lazy tells SQLAlchemy to load data in one go
     posts = db.relationship('Post', backref='author', lazy=True)
